@@ -691,7 +691,7 @@ class ServerTests(unittest.TestCase):
                 status, value = self._request(
                     state, "POST", "/api/overwrite", {"confirmation": "OVERWRITE_SOURCE"}
                 )
-            self.assertEqual(status, 200)
+            self.assertEqual(status, 200, value)
             self.assertEqual(value["export_result"]["recovery_copy"], exported["recovery_copy"])
             self.assertTrue(value["reload_required"])
             self.assertIn("reload boom", value["reload_error"])
@@ -721,7 +721,7 @@ class ServerTests(unittest.TestCase):
                 status, value = self._request(
                     state, "POST", "/api/overwrite", {"confirmation": "OVERWRITE_SOURCE"}
                 )
-            self.assertEqual(status, 200)
+            self.assertEqual(status, 200, value)
             self.assertIn("restore failed", value["reload_error"])
             self.assertTrue(state.requires_source_reload)
             status, _ = self._request(
