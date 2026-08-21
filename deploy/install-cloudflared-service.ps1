@@ -33,7 +33,9 @@ Start-Service -Name $serviceName
 sc.exe failure $serviceName reset= 60 actions= restart/5000/restart/5000/restart/5000 | Out-Null
 Start-Sleep -Seconds 2
 $service = Get-CimInstance Win32_Service -Filter "Name='$serviceName'"
-foreach ($pid in $manualPids) {
-    if ($pid -ne [int]$service.ProcessId) { Stop-Process -Id $pid -Force -ErrorAction SilentlyContinue }
+foreach ($cloudflaredProcessId in $manualPids) {
+    if ($cloudflaredProcessId -ne [int]$service.ProcessId) {
+        Stop-Process -Id $cloudflaredProcessId -Force -ErrorAction SilentlyContinue
+    }
 }
 Get-Service $serviceName | Select-Object Name,Status,StartType | Format-Table -AutoSize
