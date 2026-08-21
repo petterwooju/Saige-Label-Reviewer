@@ -58,7 +58,10 @@ assert.equal(long.hex(),'cdc76e5c9914fb9281a1c7e284d73e67f1809a48a497200e046d39c
             [node, "-e", program, str(module)],
             capture_output=True,
             text=True,
-            timeout=15,
+            # Hosted Windows runners can be heavily throttled. Keep the full
+            # one-million-byte NIST vector while allowing enough wall time for
+            # the pure JavaScript implementation on a slow shared runner.
+            timeout=60,
             check=False,
         )
         self.assertEqual(result.returncode, 0, result.stderr)
