@@ -15,13 +15,13 @@ $powershell = (Get-Command powershell.exe).Source
 $arguments = '-NoProfile -NonInteractive -ExecutionPolicy Bypass -WindowStyle Hidden -File "{0}" -ProjectRoot "{1}" -StorageRoot "{2}"' -f $startScript,$project,$StorageRoot
 $action = New-ScheduledTaskAction -Execute $powershell -Argument $arguments -WorkingDirectory $project
 $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
-$userSid = $identity.User.Value
+$qualifiedUser = $identity.Name
 $triggers = @(
     (New-ScheduledTaskTrigger -AtStartup),
-    (New-ScheduledTaskTrigger -AtLogOn -User $userSid)
+    (New-ScheduledTaskTrigger -AtLogOn -User $qualifiedUser)
 )
 $settings = New-ScheduledTaskSettingsSet -StartWhenAvailable -RestartCount 999 -RestartInterval (New-TimeSpan -Minutes 1) -ExecutionTimeLimit ([TimeSpan]::Zero) -MultipleInstances IgnoreNew
-$principal = New-ScheduledTaskPrincipal -UserId $userSid -LogonType S4U -RunLevel Highest
+$principal = New-ScheduledTaskPrincipal -UserId $qualifiedUser -LogonType S4U -RunLevel Highest
 $task = New-ScheduledTask -Action $action -Trigger $triggers -Settings $settings -Principal $principal -Description 'Loopback-only Saige remote workbench origin. Restarts automatically after failure.'
 $existing = Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue
 if ($existing) {
