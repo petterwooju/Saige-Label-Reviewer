@@ -1,8 +1,6 @@
-# Remote upload deployment (Cloudflare Named Tunnel)
+# 远程完整工作台部署（Cloudflare Named Tunnel）
 
-This mode is separate from the local review workbench. It accepts only
-self-contained `.visionproj` uploads and never exposes local path selection,
-source overwrite, native file pickers, or the shared local session API.
+远程 v0.1.0 与本机版共用同一套完整工作台 UI。远程模式隐藏本机路径选择和覆盖源文件，改为共享项目、可续传上传、编辑租约、FIFO 分析队列和严格下载导出。支持 `.visionproj`、`.srproj`、Saige JSON 和按类别分组的文件夹。
 
 ## Fixed security boundary
 
@@ -12,15 +10,12 @@ source overwrite, native file pickers, or the shared local session API.
 - The application requires both the authenticated email header and an Access
   assertion. The Tunnel route must additionally enable **Protect with Access**
   so `cloudflared` validates the assertion before proxying the request.
-- Upload chunks: 8 MiB; maximum project: 2 GiB.
-- Per-user concurrency: one uploading, validating, queued, or running task.
-- GPU scheduling: one global analysis worker; `device=auto` prefers CUDA and
-  falls back to CPU only when CUDA cannot complete.
-- Remote storage reservation: 20 GiB, with 5 GiB free-space headroom.
-- Each job uses an isolated directory and per-job analysis cache. Completed,
-  failed, and abandoned upload data is deleted after 24 hours.
-- Results use a per-job SQLite database and are paginated; other authenticated
-  users receive `404` for a job they do not own.
+- 上传分块 8 MiB，每块和整文件均做 SHA-256；单项目上限 20 GiB。
+- 所有 `@saigeai.com` 成员共享项目。项目默认只读，编辑租约 2 分钟、30 秒心跳；管理员可强制接管。
+- 全局单 worker FIFO；`device=auto` 优先 CUDA，初始化不可用时才在开始前切换 CPU。
+- 存储根固定为 `E:\remote\SaigeLabelReviewer`，最多管理 1 TiB，并保留至少 200 GiB 空闲。
+- SQLite WAL 持久化项目、人工会话、租约、队列、导出和审计。原始上传保持只读。
+- 7 天无明确活动进入回收区，24 小时后清理；后台轮询不刷新到期时间。
 
 ## Local verification
 
@@ -53,8 +48,8 @@ service or Tunnel deployment.
 6. Let the Tunnel route create the proxied DNS CNAME to
    `<TUNNEL-UUID>.cfargotunnel.com`. Named Tunnel DNS must remain proxied; the
    earlier DNS-only requirement for GitHub Pages does not apply to this design.
-7. Install `cloudflared` and the Saige remote origin as Windows services only
-   after the configuration has passed the local and authenticated public tests.
+7. 用 `deploy/configure-remote.ps1` 将真实 Access team domain、AUD 和管理员邮箱原子写入 `E:\remote\SaigeLabelReviewer\config\remote-config.json`；真实配置不进入 Git。
+8. 本机与认证公网测试通过后，以管理员身份运行 `deploy/install-cloudflared-service.ps1`，再运行 `deploy/install-remote-origin-task.ps1` 注册源站自动任务。两者均配置失败自动重启。
 
 Generated Tunnel credentials, Access tokens, and account identifiers are
 machine secrets. Store them outside the repository and never commit them.
@@ -64,21 +59,32 @@ machine secrets. Store them outside the repository and never commit them.
 Before enabling the public route:
 
 ```powershell
-.\.venv\Scripts\python.exe -m unittest tests.test_remote_server -v
+.\.venv\Scripts\python.exe -m pip check
+.\.venv\Scripts\python.exe -m pip_audit --local --progress-spinner off
 .\.venv\Scripts\python.exe -m unittest discover -s tests -v
-.\.venv\Scripts\python.exe -m compileall -q src tests run.py run_remote.py
-node --check src/saige_reviewer/remote_static/remote.js
+.\.venv\Scripts\python.exe -m compileall -q src tests run.py run_remote.py deploy/migrate-legacy-remote.py
+node --check src/saige_reviewer/static/plot-math.js
+node --check src/saige_reviewer/static/upload-sha256.js
+node --check src/saige_reviewer/static/app.js
 ```
 
 After enabling the route, verify all of the following:
 
 - an address outside `@saigeai.com` cannot reach the application;
-- a valid `@saigeai.com` user sees only their own task list;
-- a multi-chunk `.visionproj` upload completes and reports the actual CUDA/CPU
-  execution device in the result summary;
-- direct requests to the loopback origin without explicit development mode are
-  rejected;
-- `/api/open`, `/api/overwrite`, and `/api/pick-path` return `404` on the remote
-  service;
+- two valid members see the same shared projects, but only the lease holder can edit;
+- all four formats can resume upload, review, analyze, compare images and download strict exports;
+- the result summary reports actual CUDA/CPU, dtype and queue position;
+- direct requests to the loopback origin without explicit development mode are rejected;
+- `/api/open`, `/api/overwrite`, and `/api/pick-path` remain unavailable remotely;
 - the response is served through Cloudflare and the Tunnel stays healthy after
   a Windows restart.
+
+旧 v0.0.1 数据迁移脚本默认为 dry-run，不删除旧目录：
+
+```powershell
+.\.venv\Scripts\python.exe .\deploy\migrate-legacy-remote.py `
+  --legacy-root 'E:\remote\SaigeLabelReviewer\legacy-v0.0.1-YYYYMMDD-HHMM' `
+  --storage-root 'E:\remote\SaigeLabelReviewer'
+```
+
+确认后才加 `--apply`。状态检查使用 `deploy/remote-status.ps1`。切换失败时停止 v0.1.0，恢复 `v0.0.1` 程序与只读旧数据快照；永久删除旧配置或数据必须另行确认。

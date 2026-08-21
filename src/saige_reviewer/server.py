@@ -401,6 +401,20 @@ def create_handler(state: AppState, token: str):
                 return self._json({"error": "仅允许本机访问"}, HTTPStatus.FORBIDDEN)
             parsed = urlparse(self.path)
             path = parsed.path
+            if path == "/api/bootstrap":
+                return self._json({
+                    "api_version": 2,
+                    "mode": "local",
+                    "app_version": __version__,
+                    "capabilities": {
+                        "local_path_picker": True,
+                        "source_overwrite": True,
+                        "shared_projects": False,
+                        "resumable_upload": False,
+                        "edit_leases": False,
+                        "download_exports": False,
+                    },
+                })
             if path == "/api/session":
                 return self._json(state.payload(include_token=token))
             if path == "/api/job":

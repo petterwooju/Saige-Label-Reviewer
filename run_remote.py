@@ -1,4 +1,4 @@
-"""Launch the isolated Cloudflare Tunnel origin through the project venv."""
+"""Launch the shared remote workbench origin through the project venv."""
 
 from __future__ import annotations
 
@@ -20,7 +20,7 @@ if (
 
 sys.path.insert(0, str(ROOT / "src"))
 
-from saige_reviewer.remote_server import main
+from saige_reviewer.remote_workbench_server import main
 
 
 if __name__ == "__main__":

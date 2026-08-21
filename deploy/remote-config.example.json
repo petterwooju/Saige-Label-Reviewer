@@ -1,0 +1,13 @@
+{
+  "admin_emails": [
+    "admin@saigeai.com"
+  ],
+  "access_team_domain": "https://YOUR-TEAM.cloudflareaccess.com",
+  "access_audience": "YOUR-ACCESS-APPLICATION-AUD-TAG",
+  "max_project_size": 21474836480,
+  "max_managed_storage": 1099511627776,
+  "min_free_space": 214748364800,
+  "retention_seconds": 604800,
+  "recycle_seconds": 86400,
+  "lease_seconds": 120
+}

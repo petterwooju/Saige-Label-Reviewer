@@ -105,7 +105,7 @@ if ($torchReady -notcontains 'yes') {
     }
 }
 
-& $venvPython -m pip install -e "${projectRoot}[analysis]"
+& $venvPython -m pip install -e "${projectRoot}[analysis,remote]"
 if ($LASTEXITCODE -ne 0) { throw 'Analysis dependency installation failed' }
 
 if ($useCuda) {

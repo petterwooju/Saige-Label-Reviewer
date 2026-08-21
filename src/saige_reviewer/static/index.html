@@ -1,14 +1,14 @@
 <!doctype html>
 <html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Saige标记复查工作台</title><link rel="stylesheet" href="/app.css"><link rel="stylesheet" href="/preview.css"><link rel="stylesheet" href="/plot.css"><link rel="stylesheet" href="/source-dialog.css"><link rel="stylesheet" href="/analysis-dialog.css"><link rel="stylesheet" href="/layout.css"></head>
+<title>Saige标记复查工作台</title><link rel="stylesheet" href="/app.css"><link rel="stylesheet" href="/preview.css"><link rel="stylesheet" href="/plot.css"><link rel="stylesheet" href="/source-dialog.css"><link rel="stylesheet" href="/analysis-dialog.css"><link rel="stylesheet" href="/layout.css"><link rel="stylesheet" href="/remote-workbench.css"></head>
 <body>
 <div id="shell">
   <header class="topbar">
-    <div class="brand"><span class="brand-mark">S</span><div><b>Saige标记复查工作台 <span id="appVersion" class="app-version">v0.0.1</span></b><small>LOCAL-FIRST LABEL AUDIT</small></div></div>
+    <div class="brand"><span class="brand-mark">S</span><div><b>Saige标记复查工作台 <span id="appVersion" class="app-version">v0.1.0</span></b><small>LOCAL + SECURE REMOTE LABEL AUDIT</small></div></div>
     <div class="project-title"><strong id="datasetName">正在加载…</strong><span id="sourcePath">本地数据不会上传</span></div>
-    <div class="top-actions"><button id="openSource" class="ghost">打开数据源</button><button id="openAnalysis">运行分析</button><button id="openExport" class="primary">导出修正版</button></div>
+    <div class="top-actions"><span id="remoteIdentity" class="remote-identity hidden"></span><button id="editLock" class="ghost hidden">开始编辑</button><button id="openSource" class="ghost">打开数据源</button><button id="openAnalysis">运行分析</button><button id="openExport" class="primary">导出修正版</button></div>
   </header>
-  <div id="jobbar" class="jobbar hidden"><div><b id="jobMessage"></b><span id="jobPercent"></span></div><div class="job-track"><i id="jobProgress"></i></div></div>
+  <div id="jobbar" class="jobbar hidden"><div><b id="jobMessage"></b><span class="job-actions"><span id="jobPercent"></span><button id="cancelAnalysis" type="button" class="hidden">取消任务</button></span></div><div class="job-track"><i id="jobProgress"></i></div></div>
   <main id="app">
     <section id="reviewPanel" class="left panel">
       <div class="panel-head"><div><p class="eyebrow">REVIEW QUEUE</p><h1>复查队列</h1></div><span id="count" class="count"></span></div>
@@ -127,6 +127,31 @@
   <div class="dialog-actions"><button id="cancelSourceDialog" type="button" data-source-close>取消</button><button id="confirmOpen" type="submit" class="primary">打开</button></div>
 </form></dialog>
 
+<dialog id="remoteProjectsDialog" aria-labelledby="remoteProjectsTitle">
+  <section class="dialog-card remote-project-card">
+    <div class="dialog-head"><div><p class="eyebrow">SHARED PROJECTS</p><h2 id="remoteProjectsTitle">远程共享项目</h2></div><button id="closeRemoteProjects" type="button" class="icon-btn" aria-label="关闭项目列表">×</button></div>
+    <p id="remoteProjectIntro" class="dialog-note">所有 @saigeai.com 成员可查看、复查、分析和导出；同一时间仅一人持有编辑锁。</p>
+    <div class="remote-project-actions"><button id="newRemoteUpload" type="button" class="primary">上传新项目</button><button id="refreshRemoteProjects" type="button">刷新</button><button id="viewRemoteRecycle" type="button" class="hidden">回收区</button><span id="remoteStorageNotice"></span></div>
+    <div id="remoteProjectError" class="inline-error hidden" role="alert"></div>
+    <div id="remoteProjectList" class="remote-project-list" aria-live="polite"></div>
+  </section>
+</dialog>
+
+<dialog id="remoteUploadDialog" aria-labelledby="remoteUploadTitle">
+  <form id="remoteUploadForm" class="dialog-card remote-upload-card" novalidate>
+    <div class="dialog-head"><div><p class="eyebrow">RESUMABLE UPLOAD</p><h2 id="remoteUploadTitle">上传远程项目</h2></div><button id="closeRemoteUpload" type="button" class="icon-btn" aria-label="关闭上传">×</button></div>
+    <label class="field">项目名称<input id="remoteProjectName" required maxlength="160" autocomplete="off"></label>
+    <label class="field">项目格式<select id="remoteProjectFormat"><option value="visionproj">visionproj</option><option value="srproj">srproj</option><option value="saige-json">Saige JSON</option><option value="folder">按类别分组的文件夹</option></select></label>
+    <label id="remotePrimaryField" class="field">项目文件<input id="remotePrimaryFile" type="file" accept=".visionproj,.srproj,.json"></label>
+    <label id="remoteImageRootField" class="field hidden">图像根目录（项目引用外部图像时选择）<input id="remoteImageRoot" type="file" webkitdirectory multiple></label>
+    <label id="remoteDatasetField" class="field hidden">数据集文件夹<input id="remoteDatasetRoot" type="file" webkitdirectory multiple></label>
+    <p class="dialog-note compact">上传按 8 MiB 分块校验并可安全重试。浏览器提供的目录层级只作为项目内相对路径，服务器不会使用你电脑的绝对路径。</p>
+    <div id="remoteUploadError" class="inline-error hidden" role="alert"></div>
+    <div id="remoteUploadProgress" class="remote-upload-progress hidden" aria-live="polite"><div><span id="remoteUploadMessage">准备上传</span><b id="remoteUploadPercent">0%</b></div><progress id="remoteUploadBar" max="100" value="0"></progress></div>
+    <div class="dialog-actions"><button id="cancelRemoteUpload" type="button">取消</button><button id="confirmRemoteUpload" type="submit" class="primary">开始上传</button></div>
+  </form>
+</dialog>
+
 <dialog id="analysisDialog" aria-labelledby="analysisDialogTitle">
   <form method="dialog" class="dialog-card analysis-card">
     <div class="dialog-head"><div><p class="eyebrow">DINOV2 ANALYSIS</p><h2 id="analysisDialogTitle">分析配置</h2></div><button value="cancel" class="icon-btn" aria-label="关闭">×</button></div>
@@ -147,4 +172,4 @@
 <dialog id="exportDialog"><form method="dialog" class="dialog-card"><div class="dialog-head"><div><p class="eyebrow">SAFE EXPORT</p><h2>导出与应用更改</h2></div><button value="cancel" class="icon-btn" aria-label="关闭">×</button></div><div id="exportSummary" class="export-summary"></div><button id="exportCorrected" value="none" class="export-option"><b>导出修正版项目 <em>推荐</em></b><span>源项目保持不变；写出后会复读校验。</span></button><button id="exportSession" value="none" class="export-option"><b>仅导出复查会话</b><span>生成包含状态与修改记录的 JSON。</span></button><details class="danger-zone"><summary>覆盖原项目（次级危险操作）</summary><p>操作前建立完整备份并校验 SHA-256。检测到外部修改会立即停止。</p><label class="field">输入 <code>OVERWRITE_SOURCE</code> 确认<input id="overwriteConfirmation" autocomplete="off"></label><button id="overwriteSource" value="none" class="danger">覆盖原项目</button></details></form></dialog>
 
 <div id="toast" class="toast hidden" role="status"></div>
-<script src="/plot-math.js"></script><script src="/app.js"></script></body></html>
+<script src="/plot-math.js"></script><script src="/upload-sha256.js"></script><script src="/app.js"></script></body></html>

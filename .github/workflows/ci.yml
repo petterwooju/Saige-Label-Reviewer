@@ -30,28 +30,39 @@ jobs:
           Pillow==12.3.0
           scikit-learn==1.6.1
           scipy==1.15.2
+          PyJWT==2.13.0
+          cryptography==50.0.0
+          pip-audit==2.9.0
+
+      - name: Audit installed dependencies
+        run: |
+          python -m pip check
+          python -m pip_audit --local --skip-editable
 
       - name: Run unit and integration tests
         run: python -m unittest discover -s tests -v
 
       - name: Compile Python sources
-        run: python -m compileall -q src tests run.py run_remote.py
+        run: python -m compileall -q src tests run.py run_remote.py deploy/migrate-legacy-remote.py
 
       - name: Check browser JavaScript syntax
         run: |
           node --check src/saige_reviewer/static/app.js
-          node --check src/saige_reviewer/remote_static/remote.js
+          node --check src/saige_reviewer/static/plot-math.js
+          node --check src/saige_reviewer/static/upload-sha256.js
 
       - name: Parse PowerShell setup script
         shell: pwsh
         run: |
           $scriptTokens = $null
           $parseErrors = $null
-          [System.Management.Automation.Language.Parser]::ParseFile(
-            (Resolve-Path 'setup.ps1'),
-            [ref]$scriptTokens,
-            [ref]$parseErrors
-          ) | Out-Null
+          @('setup.ps1','deploy/configure-remote.ps1','deploy/start-remote-origin.ps1','deploy/install-remote-origin-task.ps1','deploy/install-cloudflared-service.ps1','deploy/remote-status.ps1') | ForEach-Object {
+            [System.Management.Automation.Language.Parser]::ParseFile(
+              (Resolve-Path $_),
+              [ref]$scriptTokens,
+              [ref]$parseErrors
+            ) | Out-Null
+          }
           if ($parseErrors.Count -ne 0) {
             $parseErrors | ForEach-Object { Write-Host $_.Message }
             throw 'setup.ps1 contains PowerShell syntax errors'

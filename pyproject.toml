@@ -1,10 +1,14 @@
 [project]
 name = "saige-label-reviewer"
-version = "0.0.1"
+version = "0.1.0"
 description = "Local-first label review workbench"
 requires-python = ">=3.12,<3.14"
 
 [project.optional-dependencies]
+remote = [
+  "cryptography==50.0.0",
+  "PyJWT==2.13.0",
+]
 analysis = [
   "huggingface-hub==1.27.0",
   "numpy==2.2.3",
@@ -26,7 +30,7 @@ build-backend = "setuptools.build_meta"
 where = ["src"]
 
 [tool.setuptools.package-data]
-saige_reviewer = ["static/*", "remote_static/*"]
+saige_reviewer = ["static/*"]
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]

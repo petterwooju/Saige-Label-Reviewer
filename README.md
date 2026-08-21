@@ -1,4 +1,4 @@
-# Saige标记复查工作台 v0.0.1
+# Saige标记复查工作台 v0.1.0
 
 本地优先的浏览器标注质量复查工具。图像、项目文件、特征、模型缓存和人工复查记录默认留在本机。“疑似错标分数”只用于安排复查顺序，不是真实错误概率。
 
@@ -36,7 +36,7 @@ powershell -ExecutionPolicy Bypass -File .\setup.ps1 -SkipModelDownload
 - Saige IAD / OCR / Det / Rod / Seg JSON；
 - 包含项目 JSON 与 images 的 `.visionproj`，按需读取预览，不整体解压。
 
-## v0.0.1 行为要点
+## v0.0.1 本机基线行为要点
 
 - 软件启动时保持空工作台，不再预填 dummy/演示数据。真实数据刚载入时是“尚未分析”：没有模型建议，也没有疑似错标分数，只有 DINOv2 分析成功后才显示两者。
 - 分析包括原始/弱化/中性灰背景、224/336/518/自动尺寸、ROI 外扩、mask pooling、t-SNE/UMAP 和分类器/近邻混合排序。
@@ -69,4 +69,14 @@ node --check src/saige_reviewer/static/app.js
 
 CI 还使用 PowerShell AST parser 解析 `setup.ps1`。它只安装固定版本的 NumPy、Pillow、scikit-learn 和 SciPy 等轻量测试依赖，不安装 Torch、不下载模型，因此不代替真实 DINOv2 硬件验收。测试总数以当次自动发现的用例为准，文档不写死数量。
 
-Cloudflare Named Tunnel 的隔离远程上传模式与部署顺序见 [docs/REMOTE_DEPLOYMENT.md](docs/REMOTE_DEPLOYMENT.md)。远程模式只接收自包含 `.visionproj`，不会暴露本机路径和覆盖写回接口。
+## v0.1.0 远程完整工作台
+
+远程版与本机版共用同一套工作台 UI，公网入口为 `saige-label-reviewer-beta.saigeai.com`。Cloudflare Access 只允许 `@saigeai.com` 成员进入；源站还会独立验证 Access JWT 的签名、issuer、AUD 和邮箱域，且只监听 `127.0.0.1:8770`。
+
+- 共享项目支持 `.visionproj`、`.srproj`、Saige JSON 和按类别分组的文件夹；浏览器按 8 MiB 分块上传，每块和整文件均做 SHA-256，断线后重选同一项目可幂等续传。
+- 项目默认只读。取得 2 分钟编辑租约后才能修改或提交分析，浏览器每 30 秒续租；管理员可以强制接管。所有写操作同时校验租约和项目 revision。
+- SQLite WAL 持久化项目、租约、队列、会话、导出和审计；原始上传文件设为只读。分析任务进入全局 FIFO 队列，固定 CUDA 优先、CPU 后备，并显示实际执行设备。
+- 远程导出从不覆盖服务器原件。输出经过严格复读验证后以可断点续传的下载提供；删除先进入回收区，24 小时后才物理清理。
+- 数据根固定为 `E:\remote\SaigeLabelReviewer`。连续 7 天无明确活动的项目自动进入回收区；后台轮询不会续期。
+
+完整部署、迁移、验收和回滚步骤见 [远程部署指南](docs/REMOTE_DEPLOYMENT.md)。远程配置模板位于 [deploy/remote-config.example.json](deploy/remote-config.example.json)，真实管理员邮箱、Access AUD 和 Tunnel 凭据不得提交到 Git。

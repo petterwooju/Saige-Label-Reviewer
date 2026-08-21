@@ -20,9 +20,9 @@ class LauncherTests(unittest.TestCase):
         from saige_reviewer import __version__
 
         manifest = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
-        self.assertEqual(__version__, "0.0.1")
+        self.assertEqual(__version__, "0.1.0")
         self.assertEqual(manifest["project"]["version"], __version__)
-        self.assertIn("v0.0.1", (ROOT / "README.md").read_text(encoding="utf-8").splitlines()[0])
+        self.assertIn("v0.1.0", (ROOT / "README.md").read_text(encoding="utf-8").splitlines()[0])
         index = (ROOT / "src" / "saige_reviewer" / "static" / "index.html").read_text(
             encoding="utf-8"
         )
