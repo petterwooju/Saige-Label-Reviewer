@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Saige标记复查工作台</title><link rel="stylesheet" href="/app.css"><link rel="stylesheet" href="/preview.css"><link rel="stylesheet" href="/plot.css"><link rel="stylesheet" href="/source-dialog.css"><link rel="stylesheet" href="/analysis-dialog.css"><link rel="stylesheet" href="/layout.css"></head>
+<body>
+<div id="shell">
+  <header class="topbar">
+    <div class="brand"><span class="brand-mark">S</span><div><b>Saige标记复查工作台 <span id="appVersion" class="app-version">v0.0.1</span></b><small>LOCAL-FIRST LABEL AUDIT</small></div></div>
+    <div class="project-title"><strong id="datasetName">正在加载…</strong><span id="sourcePath">本地数据不会上传</span></div>
+    <div class="top-actions"><button id="openSource" class="ghost">打开数据源</button><button id="openAnalysis">运行分析</button><button id="openExport" class="primary">导出修正版</button></div>
+  </header>
+  <div id="jobbar" class="jobbar hidden"><div><b id="jobMessage"></b><span id="jobPercent"></span></div><div class="job-track"><i id="jobProgress"></i></div></div>
+  <main id="app">
+    <section id="reviewPanel" class="left panel">
+      <div class="panel-head"><div><p class="eyebrow">REVIEW QUEUE</p><h1>复查队列</h1></div><span id="count" class="count"></span></div>
+      <div id="scoreNotice" class="notice"></div>
+      <div class="filters">
+        <input id="search" type="search" placeholder="搜索文件名或类别" aria-label="搜索复查项">
+        <div class="filter-row"><select id="statusFilter" aria-label="状态筛选"><option value="all">全部状态</option><option value="pending">待复查</option><option value="correct">标注正确</option><option value="modified">已修改</option><option value="uncertain">不确定</option><option value="skipped">已跳过</option></select><select id="classFilter" aria-label="类别筛选"></select></div>
+        <label class="score-filter"><span>最低分数 <output id="minScoreValue">0</output></span><input id="minScore" type="range" min="0" max="100" value="0"></label>
+      </div>
+      <div id="list" class="review-list" aria-label="复查项列表"></div>
+      <div id="listLimit" class="list-limit hidden"></div>
+    </section>
+    <div id="leftResizer" class="column-resizer" data-side="left" role="separator" tabindex="0" aria-orientation="vertical" aria-controls="reviewPanel featurePanel" aria-label="调整复查队列宽度" aria-valuemin="240" aria-valuemax="700" aria-valuenow="350" title="拖拽调整宽度；方向键微调；Home 恢复默认"></div>
+    <section id="featurePanel" class="center panel">
+      <div class="panel-head map-head"><div><p class="eyebrow">FEATURE MAP</p><h2>特征分布</h2></div><div id="legend" class="legend"></div></div>
+      <div id="plotWrap">
+        <canvas id="plot" tabindex="0" aria-label="特征空间散点图" aria-describedby="plotHelp plotZoomStatus"></canvas>
+        <div class="map-tools" role="toolbar" aria-label="特征图视图控制">
+          <button id="zoomOutPlot" type="button" title="缩小特征图" aria-label="缩小特征图">−</button>
+          <output id="plotZoomStatus" aria-live="polite">100%</output>
+          <button id="zoomInPlot" type="button" title="放大特征图" aria-label="放大特征图">＋</button>
+          <button id="fitPlot" type="button" title="复位缩放并适配当前全部点">自适应</button>
+          <span id="projectionLabel">待分析布局</span>
+        </div>
+        <div id="plotHelp" class="plot-help">鼠标：滚轮缩放、拖拽平移、点击选择；键盘：＋/－ 缩放，方向键平移，0 或 F 自适应</div>
+        <div id="plotStats" class="plot-stats" aria-live="polite"></div>
+        <div id="plotHoverRing" class="plot-hover-ring hidden" aria-hidden="true"></div>
+        <div id="plotTooltip" class="plot-tooltip hidden" role="tooltip"></div>
+        <div id="emptyPlot" class="empty hidden"><b>暂无可显示点</b><span id="emptyPlotMessage">当前筛选没有样本</span></div>
+      </div>
+      <footer><span>画布聚焦：<kbd>方向键</kbd> 平移 · <kbd>＋/－</kbd> 缩放 · <kbd>0/F</kbd> 自适应</span><span><kbd>J/K</kbd> 队列导航</span></footer>
+    </section>
+    <div id="rightResizer" class="column-resizer" data-side="right" role="separator" tabindex="0" aria-orientation="vertical" aria-controls="featurePanel detailPanel" aria-label="调整标注详情宽度" aria-valuemin="260" aria-valuemax="760" aria-valuenow="390" title="拖拽调整宽度；方向键微调；Home 恢复默认"></div>
+    <aside id="detailPanel" class="right panel">
+      <div class="panel-head"><div><p class="eyebrow">INSPECTOR</p><h2>标注详情</h2></div><span id="rank" class="count"></span></div>
+      <div id="previewComparison" class="preview-comparison">
+        <div id="preview" class="preview" tabindex="0" aria-label="当前复查图像预览" aria-describedby="previewHelp">
+          <b class="preview-pane-title">待复查图</b>
+          <span id="previewFallback">本项暂无预览</span><img alt="当前复查图像" draggable="false">
+          <div class="preview-tools" role="toolbar" aria-label="图像预览视图控制">
+            <button id="previewZoomOut" type="button" title="缩小图像" aria-label="缩小图像">−</button>
+            <output id="previewZoomStatus" aria-live="polite">100%</output>
+            <button id="previewZoomIn" type="button" title="放大图像" aria-label="放大图像">＋</button>
+            <button id="fitPreview" type="button" title="复位平移并自适应预览区">自适应</button>
+            <button id="previewModeToggle" type="button">查看原图</button>
+            <button id="previewContourToggle" type="button" aria-pressed="false">隐藏轮廓</button>
+          </div>
+          <small id="previewModeLabel">ROI 预览</small>
+          <small id="previewSizeLabel" class="preview-size-label" aria-live="polite">—</small>
+        </div>
+        <section id="referencePane" class="reference-pane" aria-labelledby="referenceTitle">
+          <div class="reference-head">
+            <div><span class="eyebrow">CLASS REFERENCES</span><b id="referenceTitle">同类参考</b></div>
+            <select id="referenceClass" aria-label="选择参考类别"></select>
+            <button id="referenceSuggested" type="button" class="hidden"></button>
+          </div>
+          <div id="referenceGallery" class="reference-gallery" aria-live="polite"></div>
+          <p id="referenceNote">参考样本来自当前数据集，并非标准答案。</p>
+        </section>
+      </div>
+      <p id="previewHelp" class="preview-help">点击图片打开大图 · 可隐藏轮廓 · 滚轮缩放 · 拖拽平移 · ＋/－ 缩放 · 方向键平移 · 0/F 自适应</p>
+      <div class="score-card"><div><small>疑似错标分数</small><strong id="score">—</strong></div><div class="score-track"><i id="scoreBar"></i></div><p>用于安排复查顺序，并非真实错误概率。</p></div>
+      <dl class="details"><div><dt>文件</dt><dd id="file">—</dd></div><div><dt>原始类别</dt><dd id="originalLabel">—</dd></div><div><dt>模型建议</dt><dd id="suggestion">—</dd></div><div><dt>邻域支持</dt><dd id="support">尚未运行完整分析</dd></div></dl>
+      <label class="field">会话中的当前类别<select id="classSelect"></select></label>
+      <div class="review-actions"><button data-status="correct" class="correct">✓ 标注正确</button><button data-status="modified" class="primary">保存修改</button><button data-status="uncertain">? 不确定</button><button data-status="skipped">→ 跳过</button></div>
+      <div class="history"><button id="undo">↶ 撤销 <kbd>Ctrl Z</kbd></button><button id="redo">↷ 重做 <kbd>Ctrl Y</kbd></button></div>
+      <div id="statusText" class="status-text"></div>
+    </aside>
+  </main>
+</div>
+
+<dialog id="imageViewerDialog" aria-labelledby="imageViewerTitle" aria-describedby="imageViewerHelp">
+  <div class="image-viewer-shell">
+    <header class="image-viewer-head">
+      <div class="image-viewer-heading"><p class="eyebrow">IMAGE VIEWER</p><h2 id="imageViewerTitle">图片浏览器</h2><span id="imageViewerPath"></span><span id="imageViewerSize" aria-live="polite">—</span></div>
+      <div class="image-viewer-controls" role="toolbar" aria-label="图片浏览器控制">
+        <button id="imageViewerPrevious" type="button" aria-label="上一张图片" title="上一张图片">‹</button>
+        <output id="imageViewerPosition" aria-live="polite">1 / 1</output>
+        <button id="imageViewerNext" type="button" aria-label="下一张图片" title="下一张图片">›</button>
+        <button id="imageViewerZoomOut" type="button" aria-label="缩小图片" title="缩小图片">−</button>
+        <output id="imageViewerZoom" aria-live="polite">100%</output>
+        <button id="imageViewerZoomIn" type="button" aria-label="放大图片" title="放大图片">＋</button>
+        <button id="imageViewerFit" type="button">自适应</button>
+        <button id="imageViewerContourToggle" type="button" aria-pressed="false">隐藏轮廓</button>
+        <button id="imageViewerClose" type="button" class="icon-btn" aria-label="关闭图片浏览器">×</button>
+      </div>
+    </header>
+    <div id="imageViewerStage" class="image-viewer-stage" tabindex="0" aria-label="大图查看区域" aria-describedby="imageViewerHelp">
+      <span id="imageViewerFallback">正在加载图片…</span>
+      <img id="imageViewerImage" alt="大图预览" draggable="false">
+    </div>
+    <footer id="imageViewerHelp">可隐藏轮廓 · 滚轮或 ＋/－ 缩放 · 拖拽或方向键平移 · 双击、0/F 自适应 · PageUp/PageDown 切换图片</footer>
+  </div>
+</dialog>
+
+<dialog id="sourceDialog" aria-labelledby="sourceDialogTitle"><form id="sourceForm" method="dialog" class="dialog-card source-card" novalidate>
+  <div class="dialog-head"><div><p class="eyebrow">DATA SOURCE</p><h2 id="sourceDialogTitle">打开本地数据源</h2></div><button id="closeSourceDialog" type="button" data-source-close class="icon-btn" aria-label="关闭">×</button></div>
+  <p class="dialog-note">支持按一级类别分组的图像文件夹、.srproj、.visionproj 和 Saige JSON。资源管理器只返回本机路径，不会上传文件。</p>
+  <label class="field" for="sourceInput">文件或数据集文件夹完整路径
+    <input id="sourceInput" autocomplete="off" spellcheck="false" placeholder="D:\data\project.srproj" aria-describedby="sourceHint sourceError">
+  </label>
+  <div class="source-picker-actions" aria-label="从本地资源管理器选择数据源">
+    <button id="pickSourceFile" type="button">选择项目文件…</button>
+    <button id="pickSourceFolder" type="button">选择数据集文件夹…</button>
+  </div>
+  <p id="sourceHint" class="dialog-note compact">也可以直接粘贴完整路径。选择器取消后会保留当前填写内容。</p>
+  <details id="previewRootDetails" class="source-advanced">
+    <summary>外部图像目录（可选）</summary>
+    <label class="field" for="previewRoots">额外授权的图像根目录（多个用分号分隔）
+      <div class="path-picker-row"><input id="previewRoots" autocomplete="off" spellcheck="false" placeholder="D:\images; E:\shared-images" aria-describedby="sourceError"><button id="pickPreviewRoot" type="button">添加目录…</button></div>
+    </label>
+    <p class="dialog-note compact">仅当项目引用其所在目录之外的图像时授权；工作台不会读取未明确授权根目录中的文件。</p>
+  </details>
+  <p id="sourceError" class="field-error hidden" role="alert"></p>
+  <div id="recentProjects" class="recent"></div>
+  <div class="dialog-actions"><button id="cancelSourceDialog" type="button" data-source-close>取消</button><button id="confirmOpen" type="submit" class="primary">打开</button></div>
+</form></dialog>
+
+<dialog id="analysisDialog" aria-labelledby="analysisDialogTitle">
+  <form method="dialog" class="dialog-card analysis-card">
+    <div class="dialog-head"><div><p class="eyebrow">DINOV2 ANALYSIS</p><h2 id="analysisDialogTitle">分析配置</h2></div><button value="cancel" class="icon-btn" aria-label="关闭">×</button></div>
+    <div id="dependencyState" class="dependency" role="status" aria-live="polite"></div>
+    <div class="config-grid">
+      <label class="field">背景处理<select id="backgroundMode"><option value="original">原始背景</option><option value="dimmed">灰度 / 弱化背景</option><option value="neutral_outside">标注外统一中性灰</option></select></label>
+      <label class="field">输入尺寸<select id="inputSize"><option value="auto">自动选择</option><option value="224">224 × 224</option><option value="336">336 × 336</option><option value="518">518 × 518</option></select></label>
+      <label class="field">降维方法<select id="projection"><option value="umap">UMAP</option><option value="tsne">t-SNE</option></select></label>
+      <label class="field">计算设备<select id="device"><option value="auto">自动（优先 GPU，失败转 CPU）</option><option value="cuda">仅使用 CUDA GPU</option><option value="cpu">仅使用 CPU</option></select></label>
+      <label class="field">模型访问<select id="modelAccess"><option value="local_only">仅使用已安装模型（离线）</option><option value="download_if_missing">缺失时允许本次联网下载</option></select></label>
+      <label class="field">ROI 外扩比例 <output id="roiValue">15%</output><input id="roiExpansion" type="range" min="0" max="100" value="15"></label>
+      <label class="check"><input id="maskPooling" type="checkbox" checked><span><b>Mask-pooled 特征</b><small>只汇总标注区域对应的 patch token</small></span></label>
+    </div>
+    <div class="dialog-actions"><button value="cancel">取消</button><button id="confirmAnalysis" value="none" class="primary">开始分析</button></div>
+  </form>
+</dialog>
+
+<dialog id="exportDialog"><form method="dialog" class="dialog-card"><div class="dialog-head"><div><p class="eyebrow">SAFE EXPORT</p><h2>导出与应用更改</h2></div><button value="cancel" class="icon-btn" aria-label="关闭">×</button></div><div id="exportSummary" class="export-summary"></div><button id="exportCorrected" value="none" class="export-option"><b>导出修正版项目 <em>推荐</em></b><span>源项目保持不变；写出后会复读校验。</span></button><button id="exportSession" value="none" class="export-option"><b>仅导出复查会话</b><span>生成包含状态与修改记录的 JSON。</span></button><details class="danger-zone"><summary>覆盖原项目（次级危险操作）</summary><p>操作前建立完整备份并校验 SHA-256。检测到外部修改会立即停止。</p><label class="field">输入 <code>OVERWRITE_SOURCE</code> 确认<input id="overwriteConfirmation" autocomplete="off"></label><button id="overwriteSource" value="none" class="danger">覆盖原项目</button></details></form></dialog>
+
+<div id="toast" class="toast hidden" role="status"></div>
+<script src="/plot-math.js"></script><script src="/app.js"></script></body></html>

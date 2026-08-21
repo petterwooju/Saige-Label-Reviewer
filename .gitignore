@@ -1,0 +1,10 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.venv/
+.saige-reviewer-setup.lock
+.agents/
+.codex/
+workspace/

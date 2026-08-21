@@ -1,0 +1,124 @@
+#plotWrap {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  isolation: isolate;
+  background: #fafcf9;
+  background-image: none;
+  user-select: none;
+}
+
+#plot {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  cursor: grab;
+  touch-action: none;
+  outline: 0;
+}
+
+#plot.dragging { cursor: grabbing; }
+#plot:focus-visible { box-shadow: inset 0 0 0 3px #0a6a4d70; }
+
+.map-tools {
+  position: absolute;
+  z-index: 5;
+  left: 12px;
+  bottom: 12px;
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  padding: 5px;
+  background: #fffffff0;
+  border: 1px solid #dce2ddcc;
+  border-radius: 9px;
+  box-shadow: 0 5px 18px #17211c17;
+  backdrop-filter: blur(5px);
+}
+
+.map-tools button { min-width: 30px; padding: 5px 8px; font-size: 11px; }
+.map-tools output {
+  min-width: 45px;
+  text-align: center;
+  font: 700 10px ui-monospace;
+  color: var(--green);
+}
+.map-tools span {
+  padding: 5px 7px;
+  border-left: 1px solid var(--line);
+  background: transparent;
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.plot-help,
+.plot-stats {
+  position: absolute;
+  z-index: 4;
+  padding: 5px 8px;
+  border: 1px solid #dce2ddaa;
+  border-radius: 6px;
+  background: #ffffffd9;
+  color: var(--muted);
+  font-size: 10px;
+  pointer-events: none;
+  backdrop-filter: blur(4px);
+}
+
+.plot-help { top: 12px; right: 12px; }
+.plot-stats { top: 44px; right: 12px; font-variant-numeric: tabular-nums; }
+
+.plot-hover-ring {
+  position: absolute;
+  z-index: 3;
+  border: 2px solid var(--ink);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 0 3px #fff;
+  pointer-events: none;
+}
+
+.plot-tooltip {
+  position: absolute;
+  z-index: 7;
+  display: grid;
+  max-width: min(280px, 70%);
+  gap: 2px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: #17211cf2;
+  color: #fff;
+  box-shadow: 0 8px 24px #17211c38;
+  pointer-events: none;
+}
+
+.plot-tooltip b,
+.plot-tooltip span,
+.plot-tooltip small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.plot-tooltip span { color: #d7e0da; font-size: 10px; }
+.plot-tooltip small { color: #9fe0c3; font-size: 9px; }
+
+#plotWrap .empty {
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+  pointer-events: none;
+}
+
+#plotWrap .empty b { color: var(--ink); font-size: 13px; }
+#plotWrap .empty span { font-size: 11px; }
+
+@media (max-width: 620px) {
+  .plot-help { display: none; }
+  .map-tools { left: 8px; bottom: 8px; }
+  .plot-stats { top: 8px; right: 8px; }
+}

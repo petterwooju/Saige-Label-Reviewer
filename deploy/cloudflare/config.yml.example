@@ -1,0 +1,16 @@
+# Copy to the cloudflared service configuration directory only after the
+# Access application and named Tunnel have been created. Never commit the
+# generated tunnel credentials JSON file.
+tunnel: <TUNNEL-UUID>
+credentials-file: C:\ProgramData\cloudflared\<TUNNEL-UUID>.json
+
+ingress:
+  - hostname: saige-label-reviewer-beta.saigeai.com
+    service: http://127.0.0.1:8770
+    originRequest:
+      access:
+        required: true
+        teamName: <CLOUDFLARE-ZERO-TRUST-TEAM-NAME>
+        audTag:
+          - <ACCESS-APPLICATION-AUD-TAG>
+  - service: http_status:404

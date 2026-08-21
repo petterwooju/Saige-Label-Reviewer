@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Saige Label Reviewer · 远程分析</title>
+  <link rel="stylesheet" href="/remote.css">
+</head>
+<body>
+  <header class="topbar">
+    <div><p class="eyebrow">SAIGE AI · REMOTE REVIEW</p><h1>Saige Label Reviewer</h1></div>
+    <div class="identity"><span class="dot" aria-hidden="true"></span><span id="identity">正在验证身份…</span></div>
+  </header>
+  <main>
+    <section class="hero card">
+      <div><p class="eyebrow">本机 GPU 安全分析队列</p><h2>上传 SaigeVision 项目，自动定位疑似错标</h2><p class="muted">仅支持自包含的 <strong>.visionproj</strong>。文件分块加密传输，分析结果仅上传者可见，并在 24 小时后自动清理。</p></div>
+      <dl class="limits"><div><dt>单任务上限</dt><dd id="sizeLimit">2 GiB</dd></div><div><dt>并行任务</dt><dd>每人 1 个</dd></div><div><dt>计算队列</dt><dd>单 GPU</dd></div></dl>
+    </section>
+    <section class="workspace">
+      <div class="left-column">
+        <section class="card upload-card" aria-labelledby="uploadTitle">
+          <div class="section-heading"><div><p class="step">01</p><h2 id="uploadTitle">上传项目</h2></div><span class="file-rule">VISIONPROJ ONLY</span></div>
+          <label class="dropzone" id="dropzone" for="fileInput"><span class="upload-mark" aria-hidden="true">↑</span><strong>选择或拖入 .visionproj</strong><span>浏览器会按小块上传，不需要一次性载入整个文件</span><input id="fileInput" type="file" accept=".visionproj" hidden></label>
+          <div id="selectedFile" class="selected-file hidden"></div>
+          <div id="uploadProgress" class="progress-wrap hidden" aria-live="polite"><div class="progress-row"><span id="uploadMessage">准备上传</span><strong id="uploadPercent">0%</strong></div><progress id="uploadBar" max="100" value="0">0%</progress></div>
+          <p id="uploadError" class="error hidden" role="alert"></p>
+          <button id="uploadButton" class="primary" type="button" disabled>上传并开始分析</button>
+        </section>
+        <section class="card" aria-labelledby="jobsTitle">
+          <div class="section-heading"><div><p class="step">02</p><h2 id="jobsTitle">我的任务</h2></div><button id="refreshButton" class="ghost" type="button">刷新</button></div>
+          <div id="jobs" class="jobs" aria-live="polite"><p class="empty">正在加载任务…</p></div>
+        </section>
+      </div>
+      <section class="card results-card" aria-labelledby="resultsTitle">
+        <div class="section-heading"><div><p class="step">03</p><h2 id="resultsTitle">分析结果</h2></div><span id="resultCount" class="result-count"></span></div>
+        <div id="resultSummary" class="summary hidden"></div>
+        <div id="results" class="results"><div class="empty-state"><span aria-hidden="true">◇</span><strong>结果将在这里显示</strong><p>分析完成后，从左侧任务中选择“查看结果”。</p></div></div>
+        <nav id="pagination" class="pagination hidden" aria-label="结果分页"><button id="previousPage" class="ghost" type="button">上一页</button><span id="pageLabel">第 1 页</span><button id="nextPage" class="ghost" type="button">下一页</button></nav>
+      </section>
+    </section>
+  </main>
+  <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+  <script src="/remote.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,35 @@
+[project]
+name = "saige-label-reviewer"
+version = "0.0.1"
+description = "Local-first label review workbench"
+requires-python = ">=3.12,<3.14"
+
+[project.optional-dependencies]
+analysis = [
+  "huggingface-hub==1.27.0",
+  "numpy==2.2.3",
+  "Pillow==12.3.0",
+  "safetensors==0.8.0",
+  "scikit-learn==1.6.1",
+  "scipy==1.15.2",
+  "torch==2.13.0",
+  "tokenizers==0.22.2",
+  "transformers==5.15.0",
+  "umap-learn==0.5.7",
+]
+
+[build-system]
+requires = ["setuptools>=75"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+saige_reviewer = ["static/*", "remote_static/*"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+
+[tool.ruff]
+line-length = 100

@@ -1,0 +1,116 @@
+#analysisDialog {
+  width: min(700px, calc(100vw - 24px));
+  max-width: 700px;
+  max-height: calc(100vh - 24px);
+  max-height: calc(100dvh - 24px);
+  overflow: hidden;
+}
+
+#analysisDialog .analysis-card {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  max-height: calc(100vh - 24px);
+  max-height: calc(100dvh - 24px);
+  padding-bottom: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+#analysisDialog .dialog-head {
+  position: sticky;
+  z-index: 2;
+  top: 0;
+  background: var(--card);
+}
+
+#analysisDialog .dependency {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+#analysisDialog .config-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 10px;
+  min-width: 0;
+  padding: 0 5px;
+}
+
+#analysisDialog .config-grid > *,
+#analysisDialog .field,
+#analysisDialog .check span {
+  min-width: 0;
+}
+
+#analysisDialog input,
+#analysisDialog select {
+  min-width: 0;
+  max-width: 100%;
+}
+
+#analysisDialog .check {
+  grid-column: 1 / -1;
+  align-items: flex-start;
+}
+
+#analysisDialog .check small {
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+#analysisDialog .dialog-actions {
+  position: sticky;
+  z-index: 2;
+  bottom: 0;
+  flex-wrap: wrap;
+  padding: 12px 18px 16px;
+  border-top: 1px solid var(--line);
+  background: var(--card);
+}
+
+@media (max-width: 620px) {
+  #analysisDialog {
+    width: min(calc(100% - 16px), 700px);
+    max-height: calc(100vh - 16px);
+    max-height: calc(100dvh - 16px);
+  }
+
+  #analysisDialog .analysis-card {
+    max-height: calc(100vh - 16px);
+    max-height: calc(100dvh - 16px);
+  }
+
+  #analysisDialog .config-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+  }
+
+  #analysisDialog .dialog-head {
+    padding: 15px 16px 12px;
+  }
+
+  #analysisDialog .dependency {
+    margin: 12px 14px;
+  }
+
+  #analysisDialog .field,
+  #analysisDialog .check {
+    margin-right: 14px;
+    margin-left: 14px;
+  }
+
+  #analysisDialog .check {
+    grid-column: auto;
+  }
+
+  #analysisDialog .dialog-actions {
+    padding: 10px 14px 14px;
+  }
+}
+
+@media (max-width: 360px) {
+  #analysisDialog .dialog-actions button {
+    flex: 1 1 120px;
+  }
+}
