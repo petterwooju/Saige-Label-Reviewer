@@ -8,6 +8,7 @@ import mimetypes
 import os
 import secrets
 import socket
+import sys
 import threading
 import uuid
 from dataclasses import asdict, dataclass
@@ -28,6 +29,26 @@ STATIC = Path(__file__).parent / "static"
 WORKSPACE = Path.cwd() / "workspace"
 STATIC_TYPES = {".html": "text/html; charset=utf-8", ".css": "text/css; charset=utf-8",
                 ".js": "text/javascript; charset=utf-8", ".json": "application/json; charset=utf-8"}
+
+
+def _safe_print(value: object) -> None:
+    """Write a diagnostic without ever changing an application outcome.
+
+    Windows services and GitHub-hosted runners can expose a legacy console
+    encoding.  Encoding a translated diagnostic must not turn a successful
+    transaction into an HTTP error or terminate a worker thread.
+    """
+    message = str(value)
+    stream = sys.stdout
+    encoding = getattr(stream, "encoding", None) or "utf-8"
+    try:
+        safe_message = message.encode(encoding, errors="backslashreplace").decode(encoding)
+        stream.write(safe_message + "\n")
+        stream.flush()
+    except Exception:
+        # Diagnostics are best-effort. The original application result is
+        # always more important than a console sink that is closed or broken.
+        return
 
 
 class ThreadingHTTPServer(_ThreadingHTTPServer):
@@ -579,7 +600,9 @@ def create_handler(state: AppState, token: str):
                             # reload succeeds.
                             state.requires_source_reload = True
                             reload_error = str(error)
-                            print(f"源项目已覆盖，但自动重载失败：{type(error).__name__}: {error}")
+                            _safe_print(
+                                f"源项目已覆盖，但自动重载失败：{type(error).__name__}: {error}"
+                            )
                     response = {"export_result": result, "reload_required": True}
                     if reload_error:
                         response["reload_error"] = reload_error

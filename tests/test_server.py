@@ -23,6 +23,17 @@ from saige_reviewer.server import (AppState, Job, PathPickerError, STATIC_TYPES,
 from saige_reviewer.session import ReviewSession
 
 
+class StrictCp1252Sink:
+    encoding = "cp1252"
+
+    def write(self, value):
+        value.encode(self.encoding, errors="strict")
+        return len(value)
+
+    def flush(self):
+        return None
+
+
 class ServerTests(unittest.TestCase):
     def test_javascript_has_executable_mime_type(self):
         self.assertEqual(STATIC_TYPES[".js"], "text/javascript; charset=utf-8")
@@ -686,7 +697,8 @@ class ServerTests(unittest.TestCase):
                 "backup": str(root / "backup.json"),
                 "recovery_copy": str(root / "recovery.json"),
             }
-            with patch("saige_reviewer.server.export_corrected", return_value=exported), \
+            with patch("saige_reviewer.server.sys.stdout", StrictCp1252Sink()), \
+                    patch("saige_reviewer.server.export_corrected", return_value=exported), \
                     patch.object(state, "open", side_effect=ValueError("reload boom")) as reopen:
                 status, value = self._request(
                     state, "POST", "/api/overwrite", {"confirmation": "OVERWRITE_SOURCE"}
