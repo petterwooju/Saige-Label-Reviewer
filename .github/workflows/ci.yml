@@ -56,7 +56,7 @@ jobs:
         run: |
           $scriptTokens = $null
           $parseErrors = $null
-          @('setup.ps1','deploy/configure-remote.ps1','deploy/start-remote-origin.ps1','deploy/install-remote-origin-task.ps1','deploy/install-cloudflared-service.ps1','deploy/remote-status.ps1') | ForEach-Object {
+          @('setup.ps1','deploy/configure-remote.ps1','deploy/start-remote-origin.ps1','deploy/install-remote-origin-task.ps1','deploy/install-cloudflared-service.ps1','deploy/install-tunnel-watchdog-task.ps1','deploy/install-tunnel-watchdog-interactive.ps1','deploy/watch-cloudflared.ps1','deploy/install-production.ps1','deploy/install-production-interactive.ps1','deploy/remote-status.ps1') | ForEach-Object {
             [System.Management.Automation.Language.Parser]::ParseFile(
               (Resolve-Path $_),
               [ref]$scriptTokens,

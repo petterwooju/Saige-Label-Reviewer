@@ -29,24 +29,49 @@ try:
 except Exception as error:
     print(json.dumps({"error": type(error).__name__}))
 '@
-    try { $databaseStatus = (& $python -c $databaseProbe $database | ConvertFrom-Json) } catch {}
+    # Windows PowerShell 5.1 removes embedded quotes when a multiline string is
+    # handed directly to a native executable. Base64 keeps the probe as one
+    # argument and makes the status script work from both powershell and pwsh.
+    $databaseProbeEncoded = [Convert]::ToBase64String(
+        [Text.Encoding]::UTF8.GetBytes($databaseProbe)
+    )
+    $databaseProbeCommand = "import base64;exec(base64.b64decode('$databaseProbeEncoded'))"
+    try { $databaseStatus = (& $python -c $databaseProbeCommand $database | ConvertFrom-Json) } catch {}
 }
-$public = $null
+$publicStatus = $null
+$publicResponse = $null
 try {
-    $handler = New-Object System.Net.Http.HttpClientHandler
-    $handler.AllowAutoRedirect = $false
-    $client = New-Object System.Net.Http.HttpClient($handler)
-    $client.Timeout = [TimeSpan]::FromSeconds(12)
-    $public = $client.GetAsync(($PublicUrl.TrimEnd('/') + '/healthz')).GetAwaiter().GetResult()
+    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+    $publicRequest = [Net.HttpWebRequest]::Create($PublicUrl.TrimEnd('/') + '/healthz')
+    $publicRequest.AllowAutoRedirect = $false
+    $publicRequest.Timeout = 12000
+    $publicResponse = $publicRequest.GetResponse()
+    $publicStatus = [int]$publicResponse.StatusCode
 } catch {
-    $public = $null
+    if ($_.Exception.Response) {
+        $publicStatus = [int]$_.Exception.Response.StatusCode
+    }
 } finally {
-    if ($client) { $client.Dispose() }
-    if ($handler) { $handler.Dispose() }
+    if ($publicResponse) { $publicResponse.Close() }
 }
 $drive = Get-PSDrive -Name ([System.IO.Path]::GetPathRoot($StorageRoot).TrimEnd(':\')) -ErrorAction SilentlyContinue
 $task = Get-ScheduledTask -TaskName 'Saige Label Reviewer Remote Origin' -ErrorAction SilentlyContinue
+$watchdog = Get-ScheduledTask -TaskName 'Saige Label Reviewer Tunnel Watchdog' -ErrorAction SilentlyContinue
 $tunnel = Get-Service -Name Cloudflared -ErrorAction SilentlyContinue
+$tunnelProcess = Get-CimInstance Win32_Service -Filter "Name='Cloudflared'" -ErrorAction SilentlyContinue
+$tunnelTcpCount = 0
+$tunnelUdpCount = 0
+if ($tunnelProcess -and [int]$tunnelProcess.ProcessId -gt 0) {
+    $tunnelProcessId = [int]$tunnelProcess.ProcessId
+    $tunnelTcpCount = @(
+        Get-NetTCPConnection -OwningProcess $tunnelProcessId -State Established -ErrorAction SilentlyContinue
+    ).Count
+    $tunnelUdpCount = @(
+        Get-NetUDPEndpoint -OwningProcess $tunnelProcessId -ErrorAction SilentlyContinue
+    ).Count
+}
+$tunnelConnected = $tunnel -and $tunnel.Status -eq 'Running' -and
+    ($tunnelTcpCount -gt 0 -or $tunnelUdpCount -gt 0)
 $cuda = if (Test-Path -LiteralPath $python) { & $python -c "import torch; print('available' if torch.cuda.is_available() else 'unavailable')" 2>$null } else { 'python-missing' }
 
 [pscustomobject]@{
@@ -57,10 +82,12 @@ $cuda = if (Test-Path -LiteralPath $python) { & $python -c "import torch; print(
     Queue        = if ($databaseStatus) { "$($databaseStatus.running) running / $($databaseStatus.queued) queued" } else { 'unknown' }
     Projects     = if ($databaseStatus) { $databaseStatus.projects } else { 'unknown' }
     Tunnel       = if ($tunnel) { "$($tunnel.Status) / $($tunnel.StartType)" } else { 'offline' }
+    Connector    = if ($tunnelConnected) { "connected ($tunnelTcpCount TCP / $tunnelUdpCount UDP)" } elseif ($tunnel) { 'disconnected' } else { 'unavailable' }
+    Watchdog     = if ($watchdog) { $watchdog.State } else { 'not installed' }
     StartupTask  = if ($task) { $task.State } else { 'not installed' }
     CUDA         = $cuda
     FreeGB       = if ($drive) { [math]::Round($drive.Free / 1GB, 1) } else { $null }
-    PublicStatus = if ($public) { [int]$public.StatusCode } else { 'unreachable' }
+    PublicStatus = if ($null -ne $publicStatus) { $publicStatus } else { 'unreachable' }
 } | Format-List
 
 $log = Join-Path $StorageRoot 'logs\origin.log'

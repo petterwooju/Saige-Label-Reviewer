@@ -49,7 +49,7 @@ service or Tunnel deployment.
    `<TUNNEL-UUID>.cfargotunnel.com`. Named Tunnel DNS must remain proxied; the
    earlier DNS-only requirement for GitHub Pages does not apply to this design.
 7. 用 `deploy/configure-remote.ps1` 将真实 Access team domain、AUD 和管理员邮箱原子写入 `E:\remote\SaigeLabelReviewer\config\remote-config.json`；真实配置不进入 Git。
-8. 本机与认证公网测试通过后，以管理员身份运行 `deploy/install-cloudflared-service.ps1`，再运行 `deploy/install-remote-origin-task.ps1` 注册源站自动任务。两者均配置失败自动重启。
+8. 本机与认证公网测试通过后，以管理员身份运行 `deploy/install-production.ps1`。安装器注册源站启动任务、cloudflared 自动服务和五分钟 Tunnel watchdog。watchdog 会在 cloudflared 进程仍运行但连接已丢失时进行二次探测并自动重启服务。
 
 Generated Tunnel credentials, Access tokens, and account identifiers are
 machine secrets. Store them outside the repository and never commit them.
@@ -87,4 +87,4 @@ After enabling the route, verify all of the following:
   --storage-root 'E:\remote\SaigeLabelReviewer'
 ```
 
-确认后才加 `--apply`。状态检查使用 `deploy/remote-status.ps1`。切换失败时停止 v0.1.0，恢复 `v0.0.1` 程序与只读旧数据快照；永久删除旧配置或数据必须另行确认。
+确认后才加 `--apply`。状态检查使用 `deploy/remote-status.ps1`；其中 `Connector` 必须为 `connected`，`Watchdog` 必须已安装。切换失败时停止 v0.1.0，恢复 `v0.0.1` 程序与只读旧数据快照；永久删除旧配置或数据必须另行确认。

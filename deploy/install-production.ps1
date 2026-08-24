@@ -17,6 +17,9 @@ if (-not $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administra
     -Cloudflared $Cloudflared -TokenFile $TokenFile
 & (Join-Path $PSScriptRoot 'install-remote-origin-task.ps1') `
     -ProjectRoot $ProjectRoot -StorageRoot $StorageRoot -TaskName $TaskName
+& (Join-Path $PSScriptRoot 'install-tunnel-watchdog-task.ps1') `
+    -ProjectRoot $ProjectRoot -StorageRoot $StorageRoot
 
 Write-Host 'Saige Label Reviewer v0.1.0 production services are installed.' -ForegroundColor Green
 Write-Host 'The origin and Cloudflare Tunnel will start automatically after Windows restarts.' -ForegroundColor Green
+Write-Host 'A five-minute watchdog will repair a stalled Tunnel connector.' -ForegroundColor Green
